@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RSS/Atom Feed Debugger</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .input-section {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 5px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        button {
+            padding: 15px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .examples {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .example-btn {
+            padding: 8px 15px;
+            background: #f0f0f0;
+            border: 1px solid #d0d0d0;
+            border-radius: 5px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .example-btn:hover {
+            background: #e0e0e0;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            display: none;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: #fff3f3;
+            border: 2px solid #ff4444;
+            color: #cc0000;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .error.show {
+            display: block;
+        }
+
+        .results {
+            display: none;
+        }
+
+        .results.show {
+            display: block;
+        }
+
+        .section {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+        }
+
+        .section h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .feed-meta {
+            display: grid;
+            gap: 15px;
+        }
+
+        .meta-item {
+            display: grid;
+            grid-template-columns: 200px 1fr;
+            gap: 10px;
+            padding: 10px;
+            background: #f9f9f9;
+            border-radius: 5px;
+        }
+
+        .meta-label {
+            font-weight: bold;
+            color: #555;
+        }
+
+        .meta-value {
+            color: #333;
+            word-break: break-word;
+        }
+
+        .item {
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+        }
+
+        .item h3 {
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .item-field {
+            margin-bottom: 10px;
+            padding: 8px;
+            background: white;
+            border-radius: 3px;
+        }
+
+        .field-name {
+            font-weight: bold;
+            color: #667eea;
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+
+        .field-value {
+            color: #555;
+            font-size: 14px;
+            word-break: break-word;
+        }
+
+        .field-value a {
+            color: #667eea;
+            text-decoration: none;
+        }
+
+        .field-value a:hover {
+            text-decoration: underline;
+        }
+
+        .raw-xml {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 20px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .xml-tag {
+            color: #569cd6;
+        }
+
+        .xml-attr {
+            color: #9cdcfe;
+        }
+
+        .xml-value {
+            color: #ce9178;
+        }
+
+        @media (max-width: 768px) {
+            .input-group {
+                flex-direction: column;
+            }
+
+            .meta-item {
+                grid-template-columns: 1fr;
+            }
+
+            .header h1 {
+                font-size: 1.8em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔧 RSS/Atom Feed Debugger</h1>
+            <p>Your RSS Army Knife - Analyze and debug any RSS or Atom feed</p>
+        </div>
+
+        <div class="input-section">
+            <div class="input-group">
+                <input type="text" id="feedUrl" placeholder="Enter RSS or Atom feed URL..." />
+                <button id="analyzeBtn" onclick="analyzeFeed()">Analyze Feed</button>
+            </div>
+            <div class="examples">
+                <span style="color: #666; margin-right: 10px;">Try examples:</span>
+                <button class="example-btn" onclick="loadExample('https://news.ycombinator.com/rss')">Hacker News</button>
+                <button class="example-btn" onclick="loadExample('https://www.reddit.com/r/programming/.rss')">Reddit Programming</button>
+                <button class="example-btn" onclick="loadExample('https://github.com/blog/all.atom')">GitHub Blog</button>
+            </div>
+        </div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Fetching and analyzing feed...</p>
+        </div>
+
+        <div class="error" id="error"></div>
+
+        <div class="results" id="results">
+            <div class="section">
+                <h2>📊 Feed Information</h2>
+                <div class="feed-meta" id="feedMeta"></div>
+            </div>
+
+            <div class="section">
+                <h2>📝 Latest 10 Items</h2>
+                <div id="items"></div>
+            </div>
+
+            <div class="section">
+                <h2>🔍 Raw XML Structure</h2>
+                <pre class="raw-xml" id="rawXml"></pre>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function loadExample(url) {
+            document.getElementById('feedUrl').value = url;
+            analyzeFeed();
+        }
+
+        async function analyzeFeed() {
+            const feedUrl = document.getElementById('feedUrl').value.trim();
+
+            if (!feedUrl) {
+                showError('Please enter a feed URL');
+                return;
+            }
+
+            // Hide previous results and errors
+            document.getElementById('results').classList.remove('show');
+            document.getElementById('error').classList.remove('show');
+            document.getElementById('loading').classList.add('show');
+            document.getElementById('analyzeBtn').disabled = true;
+
+            try {
+                // Use CORS proxy to fetch the feed
+                const proxyUrl = 'https://api.allorigins.win/raw?url=';
+                const response = await fetch(proxyUrl + encodeURIComponent(feedUrl));
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const text = await response.text();
+                const parser = new DOMParser();
+                const xmlDoc = parser.parseFromString(text, 'text/xml');
+
+                // Check for parsing errors
+                const parseError = xmlDoc.querySelector('parsererror');
+                if (parseError) {
+                    throw new Error('Invalid XML format');
+                }
+
+                // Determine feed type (RSS or Atom)
+                const isAtom = xmlDoc.querySelector('feed') !== null;
+                const isRss = xmlDoc.querySelector('rss, rdf\\:RDF') !== null;
+
+                if (!isAtom && !isRss) {
+                    throw new Error('Not a valid RSS or Atom feed');
+                }
+
+                // Parse and display feed
+                if (isAtom) {
+                    parseAtomFeed(xmlDoc, text);
+                } else {
+                    parseRssFeed(xmlDoc, text);
+                }
+
+                document.getElementById('results').classList.add('show');
+            } catch (error) {
+                showError(`Failed to fetch or parse feed: ${error.message}`);
+            } finally {
+                document.getElementById('loading').classList.remove('show');
+                document.getElementById('analyzeBtn').disabled = false;
+            }
+        }
+
+        function parseRssFeed(xmlDoc, rawXml) {
+            const channel = xmlDoc.querySelector('channel');
+            const feedMeta = document.getElementById('feedMeta');
+
+            // Extract feed metadata
+            const metaFields = {};
+            metaFields['Feed Type'] = 'RSS ' + (xmlDoc.querySelector('rss')?.getAttribute('version') || '2.0');
+
+            const metaElements = ['title', 'description', 'link', 'language', 'pubDate', 'lastBuildDate',
+                                  'managingEditor', 'webMaster', 'generator', 'docs', 'ttl', 'image'];
+
+            metaElements.forEach(field => {
+                const element = channel.querySelector(field);
+                if (element) {
+                    if (field === 'image') {
+                        const imageUrl = element.querySelector('url')?.textContent;
+                        if (imageUrl) metaFields['Image URL'] = imageUrl;
+                    } else {
+                        metaFields[capitalize(field)] = element.textContent;
+                    }
+                }
+            });
+
+            displayFeedMeta(metaFields);
+
+            // Extract items
+            const items = Array.from(xmlDoc.querySelectorAll('item')).slice(0, 10);
+            const itemsContainer = document.getElementById('items');
+            itemsContainer.innerHTML = '';
+
+            items.forEach((item, index) => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'item';
+
+                const itemData = {};
+
+                // Get all child elements
+                Array.from(item.children).forEach(child => {
+                    const tagName = child.tagName;
+                    const content = child.textContent;
+
+                    if (content) {
+                        itemData[tagName] = content;
+                    }
+
+                    // Check for attributes
+                    if (child.attributes.length > 0) {
+                        const attrs = {};
+                        Array.from(child.attributes).forEach(attr => {
+                            attrs[attr.name] = attr.value;
+                        });
+                        itemData[`${tagName} (attributes)`] = JSON.stringify(attrs, null, 2);
+                    }
+                });
+
+                let html = `<h3>Item ${index + 1}</h3>`;
+                for (const [key, value] of Object.entries(itemData)) {
+                    html += `
+                        <div class="item-field">
+                            <div class="field-name">${key}</div>
+                            <div class="field-value">${formatValue(key, value)}</div>
+                        </div>
+                    `;
+                }
+
+                itemDiv.innerHTML = html;
+                itemsContainer.appendChild(itemDiv);
+            });
+
+            // Display raw XML
+            displayRawXml(rawXml);
+        }
+
+        function parseAtomFeed(xmlDoc, rawXml) {
+            const feed = xmlDoc.querySelector('feed');
+            const feedMeta = document.getElementById('feedMeta');
+
+            // Extract feed metadata
+            const metaFields = {};
+            metaFields['Feed Type'] = 'Atom';
+
+            const metaElements = ['title', 'subtitle', 'updated', 'id', 'generator', 'rights', 'icon', 'logo'];
+
+            metaElements.forEach(field => {
+                const element = feed.querySelector(field);
+                if (element) {
+                    metaFields[capitalize(field)] = element.textContent;
+                }
+            });
+
+            // Get links
+            const links = feed.querySelectorAll('feed > link');
+            links.forEach((link, i) => {
+                const rel = link.getAttribute('rel') || 'alternate';
+                const href = link.getAttribute('href');
+                if (href) {
+                    metaFields[`Link (${rel})`] = href;
+                }
+            });
+
+            // Get authors
+            const authors = feed.querySelectorAll('feed > author');
+            authors.forEach((author, i) => {
+                const name = author.querySelector('name')?.textContent;
+                if (name) {
+                    metaFields[`Author ${i + 1}`] = name;
+                }
+            });
+
+            displayFeedMeta(metaFields);
+
+            // Extract entries
+            const entries = Array.from(xmlDoc.querySelectorAll('entry')).slice(0, 10);
+            const itemsContainer = document.getElementById('items');
+            itemsContainer.innerHTML = '';
+
+            entries.forEach((entry, index) => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'item';
+
+                const itemData = {};
+
+                // Basic fields
+                ['title', 'summary', 'content', 'published', 'updated', 'id'].forEach(field => {
+                    const element = entry.querySelector(field);
+                    if (element) {
+                        itemData[field] = element.textContent;
+                    }
+                });
+
+                // Links
+                const entryLinks = entry.querySelectorAll('link');
+                entryLinks.forEach((link, i) => {
+                    const rel = link.getAttribute('rel') || 'alternate';
+                    const href = link.getAttribute('href');
+                    if (href) {
+                        itemData[`link (${rel})`] = href;
+                    }
+                });
+
+                // Authors
+                const entryAuthors = entry.querySelectorAll('author');
+                entryAuthors.forEach((author, i) => {
+                    const name = author.querySelector('name')?.textContent;
+                    if (name) {
+                        itemData[`author ${i + 1}`] = name;
+                    }
+                });
+
+                // Categories
+                const categories = entry.querySelectorAll('category');
+                categories.forEach((cat, i) => {
+                    const term = cat.getAttribute('term');
+                    if (term) {
+                        itemData[`category ${i + 1}`] = term;
+                    }
+                });
+
+                let html = `<h3>Entry ${index + 1}</h3>`;
+                for (const [key, value] of Object.entries(itemData)) {
+                    html += `
+                        <div class="item-field">
+                            <div class="field-name">${key}</div>
+                            <div class="field-value">${formatValue(key, value)}</div>
+                        </div>
+                    `;
+                }
+
+                itemDiv.innerHTML = html;
+                itemsContainer.appendChild(itemDiv);
+            });
+
+            // Display raw XML
+            displayRawXml(rawXml);
+        }
+
+        function displayFeedMeta(metaFields) {
+            const feedMeta = document.getElementById('feedMeta');
+            feedMeta.innerHTML = '';
+
+            for (const [label, value] of Object.entries(metaFields)) {
+                const metaItem = document.createElement('div');
+                metaItem.className = 'meta-item';
+                metaItem.innerHTML = `
+                    <div class="meta-label">${label}:</div>
+                    <div class="meta-value">${formatValue(label, value)}</div>
+                `;
+                feedMeta.appendChild(metaItem);
+            }
+        }
+
+        function displayRawXml(xml) {
+            const rawXmlContainer = document.getElementById('rawXml');
+            // Format XML with indentation
+            const formatted = formatXml(xml);
+            rawXmlContainer.textContent = formatted;
+        }
+
+        function formatValue(key, value) {
+            const lowerKey = key.toLowerCase();
+
+            // Check if it's a URL
+            if (lowerKey.includes('link') || lowerKey.includes('url') || lowerKey.includes('href')) {
+                try {
+                    new URL(value);
+                    return `<a href="${escapeHtml(value)}" target="_blank">${escapeHtml(value)}</a>`;
+                } catch (e) {
+                    return escapeHtml(value);
+                }
+            }
+
+            // Check if content is HTML
+            if (lowerKey.includes('content') || lowerKey.includes('description') || lowerKey.includes('summary')) {
+                if (value.includes('<') && value.includes('>')) {
+                    return `<details><summary>Click to view HTML content</summary><pre>${escapeHtml(value)}</pre></details>`;
+                }
+            }
+
+            return escapeHtml(value);
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function capitalize(str) {
+            return str.charAt(0).toUpperCase() + str.slice(1).replace(/([A-Z])/g, ' $1').trim();
+        }
+
+        function formatXml(xml) {
+            let formatted = '';
+            let indent = '';
+            const tab = '  ';
+
+            xml.split(/>\s*</).forEach(node => {
+                if (node.match(/^\/\w/)) {
+                    indent = indent.substring(tab.length);
+                }
+                formatted += indent + '<' + node + '>\n';
+                if (node.match(/^<?\w[^>]*[^\/]$/) && !node.startsWith('?')) {
+                    indent += tab;
+                }
+            });
+
+            return formatted.substring(1, formatted.length - 2);
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('error');
+            errorDiv.innerHTML = `<strong>Error:</strong> ${escapeHtml(message)}`;
+            errorDiv.classList.add('show');
+        }
+
+        // Allow Enter key to trigger analysis
+        document.getElementById('feedUrl').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                analyzeFeed();
+            }
+        });
+    </script>
+</body>
+</html>
