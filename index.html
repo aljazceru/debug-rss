@@ -188,6 +188,7 @@
             padding: 10px;
             background: #f9f9f9;
             border-radius: 5px;
+            overflow: hidden;
         }
 
         .meta-label {
@@ -198,6 +199,8 @@
         .meta-value {
             color: #333;
             word-break: break-word;
+            overflow-wrap: break-word;
+            max-width: 100%;
         }
 
         .item {
@@ -218,6 +221,7 @@
             padding: 8px;
             background: white;
             border-radius: 3px;
+            overflow: hidden;
         }
 
         .field-name {
@@ -231,11 +235,15 @@
             color: #555;
             font-size: 14px;
             word-break: break-word;
+            overflow-wrap: break-word;
+            max-width: 100%;
         }
 
         .field-value a {
             color: #667eea;
             text-decoration: none;
+            word-break: break-all;
+            overflow-wrap: break-word;
         }
 
         .field-value a:hover {
